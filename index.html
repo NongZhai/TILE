@@ -28,13 +28,13 @@
             width: 100%;
             max-width: 900px;
         }
-        #hole-controls {
+        #hole-controls, #floor-tile-controls, #wall-tiling-start-controls, #results {
             margin-top: 15px;
             padding-top: 15px;
             border-top: 1px solid #eee;
             grid-column: 1 / -1; /* Span all columns */
         }
-        #hole-controls h3 {
+        #hole-controls h3, #floor-tile-controls h3, #wall-tiling-start-controls h3, #results h3 {
             margin-top: 0;
             margin-bottom: 10px;
         }
@@ -86,6 +86,10 @@
           .hole-dimensions-inputs .control-group {
               margin-bottom: 0;
           }
+
+        #results p {
+            margin-bottom: 5px;
+        }
 
 
         .control-group {
@@ -176,25 +180,27 @@
              <input type="number" id="gap" value="0.2" min="0" step="0.01">
          </div>
 
-         <div id="floor-tile-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+         <div id="floor-tile-controls">
              <h3>地面磁磚設定</h3>
              <div class="hole-input-row"> <div class="control-group">
                      <label for="floorTileWidth">地面磁磚寬度 (cm):</label>
-                     <input type="number" id="floorTileWidth" value="60" min="1">
+                     <input type="number" id="floorTileWidth" value="30" min="1">
                  </div>
                  <div class="control-group">
                      <label for="floorTileHeight">地面磁磚高度 (cm):</label>
-                     <input type="number" id="floorTileHeight" value="60" min="1"> </div>
+                     <input type="number" id="floorTileHeight" value="30" min="1"> </div>
                  </div>
          </div>
 
-         <div id="wall-tiling-start-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+         <div id="wall-tiling-start-controls">
              <h3>牆面磁磚起鋪點</h3>
              <div class="hole-input-row"> <div class="control-group">
                      <label for="wallStartPoint">起鋪點:</label>
                      <select id="wallStartPoint">
-                         <option value="bottom" selected>下方</option>
-                         <option value="top">上方</option>
+                         <option value="bottomLeft" selected>左下角</option>
+                         <option value="bottomRight">右下角</option>
+                         <option value="topLeft">左上角</option>
+                         <option value="topRight">右上角</option>
                          <option value="center">中心</option>
                      </select>
                  </div>
@@ -263,6 +269,27 @@
               </div>
 
               </div>
+
+        <div id="results">
+            <h3>計算結果</h3>
+            <p>地面面積: <span id="floorArea">0</span> m²</p>
+            <p>牆面總面積 (未扣除洞口): <span id="wallArea">0</span> m²</p>
+            <p>門洞總面積: <span id="doorArea">0</span> m²</p>
+            <p>窗洞總面積: <span id="windowArea">0</span> m²</p>
+            <p>淨牆面面積 (扣除洞口): <span id="netWallArea">0</span> m²</p>
+
+            <h4>牆面磁磚數量統計</h4>
+            <p>完整無裁切牆面磁磚數量: <span id="fullWallTiles">0</span> 片</p>
+            <p>牆面裁切磁磚數量: <span id="cutWallTiles">0</span> 片</p>
+            <p>牆面總磁磚用量: <span id="totalWallTiles">0</span> 片</p>
+
+            <h4>地面磁磚數量統計</h4>
+            <p>完整無裁切地面磁磚數量: <span id="fullFloorTiles">0</span> 片</p>
+            <p>地面裁切磁磚數量: <span id="cutFloorTiles">0</span> 片</p>
+            <p>地面總磁磚用量: <span id="totalFloorTiles">0</span> 片</p>
+
+            <p>總計所有磁磚用量: <span id="totalAllTiles">0</span> 片</p>
+        </div>
     </div>
 
     <button onclick="renderRoom()">更新並渲染</button>
@@ -277,10 +304,15 @@
             UNFOLDED: 'unfolded'     // Unfolded layout centered around the floor
         };
         const DIMENSION_LINE_OFFSET = 15; // Offset for dimension lines in pixels
+        const CUT_DIMENSION_OFFSET = 5; // Offset for cut tile dimension lines
 
         // ====== Helper Functions ======
         function cmToPx(cm) {
             return cm * SCALE;
+        }
+
+        function pxToCm(px) {
+             return px / SCALE;
         }
 
         // Calculate text center position (for tile numbering)
@@ -400,6 +432,10 @@
                 this.surfaceType = surfaceType; // 'floor', 'wall-short1', 'wall-long1', etc.
                 this.holes = []; // List of holes
 
+                // Initialize total tiled dimensions
+                this.totalTiledWidth_px = 0;
+                this.totalTiledHeight_px = 0;
+
                 this.updateDimensions(width_cm, height_or_depth_cm); // Initialize pixel dimensions and row/col counts
             }
 
@@ -444,21 +480,44 @@
                  if (remainingHeight_px > tolerance) this.rows++;
 
 
-                 // Actual layout dimensions calculation for start offset - based on final cols/rows
-                 let actualLayoutWidth_px = this.cols > 0 ? (this.cols - 1) * stepX + this.tileWidth_px : 0;
-                 if (this.cols > 1) actualLayoutWidth_px += this.gap_px; // Add final gap if more than one tile
+                 // Calculate the total width and height occupied by the tiled area based on the number of tiles and gaps
+                 let totalTiledWidth = 0;
+                 if (this.cols > 0) {
+                     totalTiledWidth = this.cols * this.tileWidth_px + (this.cols > 1 ? (this.cols - 1) * this.gap_px : 0);
+                      // Adjust for the last tile if it's cut
+                      const lastTileStartX = (this.cols - 1) * stepX;
+                      const remainingWidth = this.width_px - lastTileStartX;
+                       if (remainingWidth > tolerance && remainingWidth < this.tileWidth_px - tolerance) {
+                           totalTiledWidth = lastTileStartX + remainingWidth;
+                       } else if (this.cols === 1 && this.width_px > tolerance) {
+                           totalTiledWidth = Math.min(this.width_px, this.tileWidth_px);
+                       }
+                 }
 
-                 let actualLayoutHeight_px = this.rows > 0 ? (this.rows - 1) * stepY + this.tileHeight_px : 0;
-                 if (this.rows > 1) actualLayoutHeight_px += this.gap_px; // Add final gap if more than one tile
 
-                  // Handle single tile case explicitly or if remaining space is less than tile size but > tolerance
-                 if (this.cols === 1 && this.width_px > tolerance) actualLayoutWidth_px = Math.min(this.width_px, this.tileWidth_px);
-                 if (this.rows === 1 && this.height_or_depth_px > tolerance) actualLayoutHeight_px = Math.min(this.height_or_depth_px, this.tileHeight_px);
+                 let totalTiledHeight = 0;
+                 if (this.rows > 0) {
+                      totalTiledHeight = this.rows * this.tileHeight_px + (this.rows > 1 ? (this.rows - 1) * this.gap_px : 0);
+                      // Adjust for the last tile if it's cut
+                      const lastTileStartY = (this.rows - 1) * stepY;
+                      const remainingHeight = this.height_or_depth_px - lastTileStartY;
+                       if (remainingHeight > tolerance && remainingHeight < this.tileHeight_px - tolerance) {
+                           totalTiledHeight = lastTileStartY + remainingHeight;
+                       } else if (this.rows === 1 && this.height_or_depth_px > tolerance) {
+                           totalTiledHeight = Math.min(this.height_or_depth_px, this.tileHeight_px);
+                       }
+                 }
 
 
-                 // Ensure layout dimensions do not exceed surface dimensions (with tolerance)
-                 this.layoutWidth_px = Math.min(actualLayoutWidth_px, this.width_px + tolerance);
-                 this.layoutHeight_px = Math.min(actualLayoutHeight_px, this.height_or_depth_px + tolerance);
+                 // Ensure total tiled dimensions are not negative or zero due to floating point issues
+                 totalTiledWidth = Math.max(0, totalTiledWidth);
+                 totalTiledHeight = Math.max(0, totalTiledHeight);
+
+                 // Store calculated total tiled dimensions
+                 this.totalTiledWidth_px = totalTiledWidth;
+                 this.totalTiledHeight_px = totalTiledHeight;
+
+
             }
 
              // Update tile configuration (tile size, gap, start point)
@@ -494,74 +553,30 @@
                 let startX = 0;
                 let startY = 0;
 
-                 // Recalculate actual layout dimensions based on the final cols/rows
-                 const stepX = this.tileWidth_px + this.gap_px;
-                 const stepY = this.tileHeight_px + this.gap_px;
+                 // Use the pre-calculated total tiled dimensions
+                 const totalTiledWidth = this.totalTiledWidth_px;
+                 const totalTiledHeight = this.totalTiledHeight_px;
 
-                 let currentLayoutWidth = 0;
-                 for(let c = 0; c < this.cols; c++) {
-                     let tileW = this.tileWidth_px;
-                      // Calculate actual width for the last tile in a row
-                      if (c === this.cols - 1 && this.cols > 0) { // Check if it's the last column and there's at least one column
-                          const coveredWidth = (this.cols - 1) * stepX + this.tileWidth_px + (this.cols > 1 ? this.gap_px : 0);
-                          const tolerance = 1e-9;
-                          if (this.width_px > coveredWidth + tolerance) { // Use tolerance for comparison
-                              tileW = this.width_px - ((this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0));
-                              if (tileW < 0) tileW = 0;
-                           } else if (Math.abs(this.width_px - coveredWidth) <= tolerance && this.cols === 1) {
-                                  // Special case for a single tile that perfectly fits or is slightly smaller
-                                  tileW = this.width_px;
-                             }
-                      }
-                     currentLayoutWidth += tileW + (c < this.cols - 1 ? this.gap_px : 0);
-                 }
-
-                  let currentLayoutHeight = 0;
-                  for(let r = 0; r < this.rows; r++) {
-                      let tileH = this.tileHeight_px;
-                       // Calculate actual height for the last tile in a column
-                       if (r === this.rows - 1 && this.rows > 0) { // Check if it's the last row and there's at least one row
-                           const coveredHeight = (this.rows - 1) * stepY + this.tileHeight_px + (this.rows > 1 ? this.gap_px : 0);
-                            const tolerance = 1e-9;
-                           if (this.height_or_depth_px > coveredHeight + tolerance) { // Use tolerance for comparison
-                                tileH = this.height_or_depth_px - ((this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0));
-                                if (tileH < 0) tileH = 0;
-                           } else if (Math.abs(this.height_or_depth_px - coveredHeight) <= tolerance && this.rows === 1) {
-                                    // Special case for a single tile that perfectly fits or is slightly smaller
-                                    tileH = this.height_or_depth_px;
-                               }
-                       }
-                      currentLayoutHeight += tileH + (r < this.rows - 1 ? this.gap_px : 0);
-                  }
 
                 switch (this.startPoint) {
                     case 'center':
-                         startX = (this.width_px - currentLayoutWidth) / 2;
-                         startY = (this.height_or_depth_px - currentLayoutHeight) / 2;
+                         startX = (this.width_px - totalTiledWidth) / 2;
+                         startY = (this.height_or_depth_px - totalTiledHeight) / 2;
                         break;
                     case 'bottomLeft':
                          startX = 0;
-                         startY = this.height_or_depth_px - currentLayoutHeight;
+                         startY = this.height_or_depth_px - totalTiledHeight;
                          break;
                     case 'bottomRight':
-                         startX = this.width_px - currentLayoutWidth;
-                         startY = this.height_or_depth_px - currentLayoutHeight;
+                         startX = this.width_px - totalTiledWidth;
+                         startY = this.height_or_depth_px - totalTiledHeight;
                          break;
                     case 'topLeft': // default for floor
                          startX = 0;
                          startY = 0;
                          break;
                     case 'topRight':
-                         startX = this.width_px - currentLayoutWidth;
-                         startY = 0;
-                         break;
-                     // Handle simplified 'bottom' and 'top' for walls
-                    case 'bottom': // Map 'bottom' to 'bottomLeft' for walls
-                         startX = 0;
-                         startY = this.height_or_depth_px - currentLayoutHeight;
-                         break;
-                    case 'top': // Map 'top' to 'topLeft' for walls
-                         startX = 0;
+                         startX = this.width_px - totalTiledWidth;
                          startY = 0;
                          break;
                     default: // Fallback to topLeft
@@ -577,14 +592,14 @@
             // surfaceCanvasOffsetX, surfaceCanvasOffsetY are the drawing start points for this surface on the overall canvas
             renderContent(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex) {
                 console.error("renderContent method must be implemented by subclass");
-                return cumulativeTileIndex; // Return updated index
+                return { cumulativeTileIndex: cumulativeTileIndex, fullTileCount: 0, cutTileCount: 0 }; // Return updated index, full and cut tile counts
             }
 
             // Public render method: Set canvas state and call renderContent
             render(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex) {
                 ctx.save();
                 // Can set some general styles or clip paths if needed
-                const updatedIndex = this.renderContent(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex);
+                const renderResult = this.renderContent(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex);
 
                  // Draw all hole outlines
                  // Holes are drawn relative to the surface's top-left (this.x_px, this.y_px)
@@ -593,7 +608,7 @@
                  });
 
                 ctx.restore();
-                 return updatedIndex; // Return updated index
+                 return renderResult; // Return updated index and cut tile count
             }
         }
 
@@ -622,6 +637,9 @@
 
                  const tolerance = 1e-9; // Use tolerance for float comparison
 
+                 let fullTileCount = 0; // Counter for full tiles on this surface
+                 let cutTileCount = 0; // Counter for cut tiles on this surface
+
                 // Draw tiles and gaps
                 for (let r = 0; r < this.rows; r++) {
                     for (let c = 0; c < this.cols; c++) {
@@ -633,29 +651,29 @@
                         let currentTileWidth_px = this.tileWidth_px;
                         let currentTileHeight_px = this.tileHeight_px;
 
-                         // Calculate actual width for the last tile in a row
-                         if (c === this.cols - 1 && this.cols > 0) {
-                             const coveredWidth = startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0);
-                             if (this.width_px > coveredWidth + tolerance) { // Use tolerance for comparison
-                                 currentTileWidth_px = this.width_px - (startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0));
-                                 if (currentTileWidth_px < 0) currentTileWidth_px = 0; // Should not be negative
-                             } else if (Math.abs(this.width_px - coveredWidth) <= tolerance && this.cols === 1) {
-                                  // Special case for a single tile that perfectly fits or is slightly smaller
-                                  currentTileWidth_px = this.width_px;
-                             }
+                         // Calculate the right edge of the current tile if it were a full tile
+                         const fullTileRightEdge = tileInnerX + this.tileWidth_px;
+                         // Calculate the bottom edge of the current tile if it were a full tile
+                         const fullTileBottomEdge = tileInnerY + this.tileHeight_px;
+
+                         // Check if the right edge extends beyond the surface width
+                         if (fullTileRightEdge > this.width_px + tolerance) {
+                             currentTileWidth_px = this.width_px - tileInnerX;
+                             if (currentTileWidth_px < 0) currentTileWidth_px = 0; // Should not be negative
                          }
 
-                          // Calculate actual height for the last tile in a column
-                          if (r === this.rows - 1 && this.rows > 0) {
-                              const coveredHeight = startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0);
-                               if (this.height_or_depth_px > coveredHeight + tolerance) { // Use tolerance for comparison
-                                   currentTileHeight_px = this.height_or_depth_px - (startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0));
-                                   if (currentTileHeight_px < 0) currentTileHeight_px = 0; // Should not be negative
-                               } else if (Math.abs(this.height_or_depth_px - coveredHeight) <= tolerance && this.rows === 1) {
-                                    // Special case for a single tile that perfectly fits or is slightly smaller
-                                    currentTileHeight_px = this.height_or_depth_px;
-                               }
-                          }
+                         // Check if the bottom edge extends beyond the surface height
+                         if (fullTileBottomEdge > this.height_or_depth_px + tolerance) {
+                             currentTileHeight_px = this.height_or_depth_px - tileInnerY;
+                             if (currentTileHeight_px < 0) currentTileHeight_px = 0; // Should not be negative
+                         }
+
+                         // If the tile starts beyond the surface dimensions, its size is 0
+                         if (tileInnerX >= this.width_px - tolerance || tileInnerY >= this.height_or_depth_px - tolerance) {
+                             currentTileWidth_px = 0;
+                             currentTileHeight_px = 0;
+                         }
+
 
                         // Check if it's a cut tile based on the calculated current dimensions
                          const isCutTile = Math.abs(currentTileWidth_px - this.tileWidth_px) > tolerance || Math.abs(currentTileHeight_px - this.tileHeight_px) > tolerance;
@@ -671,8 +689,10 @@
                                  ctx.fillStyle = collisionFillStyle;
                              } else if (isCutTile) {
                                  ctx.fillStyle = cutTileFillStyle;
+                                  cutTileCount++; // Increment cut tile count
                              } else {
                                  ctx.fillStyle = defaultFillStyle;
+                                  fullTileCount++; // Increment full tile count
                              }
 
                             // Calculate tile top-left coordinates on the overall canvas
@@ -686,21 +706,43 @@
                             // ctx.strokeRect(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px);
 
                             // Draw tile code (cumulative numbering) - Only for non-colliding tiles
-                             if (!isInsideHole) {
-                                 cumulativeTileIndex++;
-                                 const tileCode = `${cumulativeTileIndex}`; // Use cumulative index
-                                 ctx.fillStyle = '#000'; // Black text
-                                 ctx.font = '12px sans-serif'; // Set font for text
-                                 // Calculate text position based on the actual current tile size
-                                 const textPos = getTextCenteredPos(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px, tileCode);
-                                 ctx.fillText(tileCode, textPos.x, textPos.y);
+                            // Floor tiles have their own separate cumulative index
+                             cumulativeTileIndex++; // Increment floor tile index
+                             const tileCode = `${cumulativeTileIndex}`; // Use cumulative index
+                             ctx.fillStyle = '#000'; // Black text
+                             ctx.font = '12px sans-serif'; // Set font for text
+                             // Calculate text position based on the actual current tile size
+                             const textPos = getTextCenteredPos(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px, tileCode);
+                             ctx.fillText(tileCode, textPos.x, textPos.y);
+
+                             // Draw cut tile dimensions
+                             if (isCutTile) {
+                                  // Draw horizontal dimension for cut width
+                                   if (Math.abs(currentTileWidth_px - this.tileWidth_px) > tolerance) {
+                                       drawDimensionLine(ctx,
+                                           tileCanvasX, tileCanvasY + currentTileHeight_px + CUT_DIMENSION_OFFSET,
+                                           tileCanvasX + currentTileWidth_px, tileCanvasY + currentTileHeight_px + CUT_DIMENSION_OFFSET,
+                                           `${pxToCm(currentTileWidth_px).toFixed(1)} cm`,
+                                           CUT_DIMENSION_OFFSET
+                                       );
+                                   }
+                                   // Draw vertical dimension for cut height
+                                   if (Math.abs(currentTileHeight_px - this.tileHeight_px) > tolerance) {
+                                        drawDimensionLine(ctx,
+                                            tileCanvasX + currentTileWidth_px + CUT_DIMENSION_OFFSET, tileCanvasY,
+                                            tileCanvasX + currentTileWidth_px + CUT_DIMENSION_OFFSET, tileCanvasY + currentTileHeight_px,
+                                            `${pxToCm(currentTileHeight_px).toFixed(1)} cm`,
+                                            CUT_DIMENSION_OFFSET
+                                        );
+                                   }
                              }
+
                         }
                     }
                 }
 
                 // TODO: Draw floor dimension labels (complex, needs calculation of label positions)
-                return cumulativeTileIndex; // Return updated index
+                return { cumulativeTileIndex: cumulativeTileIndex, fullTileCount: fullTileCount, cutTileCount: cutTileCount }; // Return updated index, full and cut tile counts
             }
         }
 
@@ -737,12 +779,15 @@
 
                  const tolerance = 1e-9; // Use tolerance for float comparison
 
+                 let fullTileCount = 0; // Counter for full tiles on this surface
+                 let cutTileCount = 0; // Counter for cut tiles on this surface
+
                 // Draw tiles and gaps
                 for (let r = 0; r < this.rows; r++) {
                     for (let c = 0; c < this.cols; c++) {
                         // Calculate tile top-left coordinates within the surface (relative to surface top-left)
                         const tileInnerX = startX + c * stepX;
-                         // For walls starting from bottomLeft, tileInnerY is distance from TOP of the wall area
+                         // For walls, tileInnerY is distance from the top of the wall area, offset by startY
                         const tileInnerY = startY + r * stepY;
 
 
@@ -750,29 +795,28 @@
                         let currentTileWidth_px = this.tileWidth_px;
                         let currentTileHeight_px = this.tileHeight_px;
 
-                         // Calculate actual width for the last tile in a row
-                         if (c === this.cols - 1 && this.cols > 0) {
-                             const coveredWidth = startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0);
-                             if (this.width_px > coveredWidth + tolerance) { // Use tolerance for comparison
-                                 currentTileWidth_px = this.width_px - (startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0));
-                                 if (currentTileWidth_px < 0) currentTileWidth_px = 0; // Should not be negative
-                             } else if (Math.abs(this.width_px - coveredWidth) <= tolerance && this.cols === 1) {
-                                  // Special case for a single tile that perfectly fits or is slightly smaller
-                                  currentTileWidth_px = this.width_px;
-                             }
+                         // Calculate the right edge of the current tile if it were a full tile
+                         const fullTileRightEdge = tileInnerX + this.tileWidth_px;
+                         // Calculate the bottom edge of the current tile if it were a full tile
+                         const fullTileBottomEdge = tileInnerY + this.tileHeight_px;
+
+                         // Check if the right edge extends beyond the surface width
+                         if (fullTileRightEdge > this.width_px + tolerance) {
+                             currentTileWidth_px = this.width_px - tileInnerX;
+                             if (currentTileWidth_px < 0) currentTileWidth_px = 0; // Should not be negative
                          }
 
-                          // Calculate actual height for the last tile in a column
-                          if (r === this.rows - 1 && this.rows > 0) {
-                              const coveredHeight = startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0);
-                               if (this.height_or_depth_px > coveredHeight + tolerance) { // Use tolerance for comparison
-                                   currentTileHeight_px = this.height_or_depth_px - (startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0));
-                                   if (currentTileHeight_px < 0) currentTileHeight_px = 0; // Should not be negative
-                               } else if (Math.abs(this.height_or_depth_px - coveredHeight) <= tolerance && this.rows === 1) {
-                                    // Special case for a single tile that perfectly fits or is slightly smaller
-                                    currentTileHeight_px = this.height_or_depth_px;
-                               }
-                          }
+                         // Check if the bottom edge extends beyond the surface height
+                         if (fullTileBottomEdge > this.height_or_depth_px + tolerance) {
+                             currentTileHeight_px = this.height_or_depth_px - tileInnerY;
+                             if (currentTileHeight_px < 0) currentTileHeight_px = 0; // Should not be negative
+                         }
+
+                         // If the tile starts beyond the surface dimensions, its size is 0
+                         if (tileInnerX >= this.width_px - tolerance || tileInnerY >= this.height_or_depth_px - tolerance) {
+                             currentTileWidth_px = 0;
+                             currentTileHeight_px = 0;
+                         }
 
 
                         // Check if it's a cut tile based on calculated dimensions
@@ -802,27 +846,54 @@
                         if (currentTileWidth_px > tolerance && currentTileHeight_px > tolerance) {
                              if (isInsideHole) {
                                  ctx.fillStyle = collisionFillStyle;
+                                 // Include collision tiles in count for walls
+                                 cumulativeTileIndex++;
+                                  cutTileCount++; // Collision tiles are also considered cut tiles for numbering
                              } else if (isCutTile) {
                                  ctx.fillStyle = cutTileFillStyle;
+                                  cumulativeTileIndex++; // Increment wall tile index
+                                  cutTileCount++; // Increment cut tile count
                              } else {
                                  ctx.fillStyle = defaultFillStyle;
+                                  cumulativeTileIndex++; // Increment wall tile index
+                                  fullTileCount++; // Increment full tile count
                              }
 
                             // Draw tile
                             ctx.fillRect(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px);
-                            // Draw gap
+                            // Draw gap (can be done with strokeRect or separate lines)
                             // ctx.strokeRect(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px);
 
-                            // Draw tile code (cumulative numbering) - Only for non-colliding tiles
-                             if (!isInsideHole) {
-                                 cumulativeTileIndex++;
-                                 const tileCode = `${cumulativeTileIndex}`; // Use cumulative index
-                                 ctx.fillStyle = '#000'; // Black text
-                                 ctx.font = '12px sans-serif'; // Set font for text
-                                 // Calculate text position based on the actual current tile size
-                                 const textPos = getTextCenteredPos(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px, tileCode);
-                                 ctx.fillText(tileCode, textPos.x, textPos.y);
+                            // Draw tile code (cumulative numbering)
+                             const tileCode = `${cumulativeTileIndex}`; // Use cumulative index
+                             ctx.fillStyle = '#000'; // Black text
+                             ctx.font = '12px sans-serif'; // Set font for text
+                             // Calculate text position based on the actual current tile size
+                             const textPos = getTextCenteredPos(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px, tileCode);
+                             ctx.fillText(tileCode, textPos.x, textPos.y);
+
+                             // Draw cut tile dimensions
+                             if (isCutTile || isInsideHole) { // Draw dimensions for both cut and collision tiles
+                                  // Draw horizontal dimension for cut width
+                                   if (Math.abs(currentTileWidth_px - this.tileWidth_px) > tolerance) {
+                                       drawDimensionLine(ctx,
+                                           tileCanvasX, tileCanvasY + currentTileHeight_px + CUT_DIMENSION_OFFSET,
+                                           tileCanvasX + currentTileWidth_px, tileCanvasY + currentTileHeight_px + CUT_DIMENSION_OFFSET,
+                                           `${pxToCm(currentTileWidth_px).toFixed(1)} cm`,
+                                           CUT_DIMENSION_OFFSET
+                                       );
+                                   }
+                                   // Draw vertical dimension for cut height
+                                   if (Math.abs(currentTileHeight_px - this.tileHeight_px) > tolerance) {
+                                        drawDimensionLine(ctx,
+                                            tileCanvasX + currentTileWidth_px + CUT_DIMENSION_OFFSET, tileCanvasY,
+                                            tileCanvasX + currentTileWidth_px + CUT_DIMENSION_OFFSET, tileCanvasY + currentTileHeight_px,
+                                            `${pxToCm(currentTileHeight_px).toFixed(1)} cm`,
+                                            CUT_DIMENSION_OFFSET
+                                        );
+                                   }
                              }
+
                         }
                     }
                 }
@@ -843,7 +914,7 @@
 
                 // TODO: Draw wall dimension labels
                  // Hole outlines are drawn universally in Surface.render
-                 return cumulativeTileIndex; // Return updated index
+                 return { cumulativeTileIndex: cumulativeTileIndex, fullTileCount: fullTileCount, cutTileCount: cutTileCount }; // Return updated index, full and cut tile counts
             }
         }
 
@@ -857,8 +928,8 @@
                 // Initialize surfaces with default dimensions and tile configs
                 const defaultWallTileWidth = 60; // cm
                 const defaultWallTileHeight = 30; // cm
-                const defaultFloorTileWidth = 60; // cm
-                const defaultFloorTileHeight = 60; // cm
+                const defaultFloorTileWidth = 30; // cm // Changed default to 30
+                const defaultFloorTileHeight = 30; // cm // Changed default to 30
                 const defaultGap = 0.2; // cm
                 const defaultStartPointFloor = 'topLeft';
                 const defaultStartPointWall = 'bottomLeft'; // Default wall start point
@@ -1054,7 +1125,14 @@
                 ctx.fillStyle = '#F0F0F0'; // Set background color
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                let cumulativeTileIndex = 0; // Initialize cumulative index
+                let cumulativeWallTileIndex = 0; // Initialize cumulative index for walls
+                let totalWallFullTiles = 0; // Initialize cumulative full tile count for walls
+                let totalWallCutTiles = 0; // Initialize cumulative cut tile count for walls
+
+                let cumulativeFloorTileIndex = 0; // Initialize cumulative index for floor
+                let totalFloorFullTiles = 0; // Initialize cumulative full tile count for floor
+                let totalFloorCutTiles = 0; // Initialize cumulative cut tile count for floor
+
 
                 // Iterate through all surfaces and render (fixed order ShortWall1, LongWall1, ShortWall2, LongWall2, Floor)
                 const renderingOrder = [this.wallShort1, this.wallLong1, this.wallShort2, this.wallLong2, this.floor];
@@ -1062,8 +1140,21 @@
                  renderingOrder.forEach(surface => {
                      const pos = positions.get(surface);
                      if (pos) {
-                         // Pass and update the cumulative index
-                         cumulativeTileIndex = surface.render(ctx, pos.offsetX, pos.offsetY, cumulativeTileIndex);
+                         if (surface.surfaceType === 'floor') {
+                             // Render floor with its separate index and accumulate floor tile counts
+                             const floorRenderResult = surface.render(ctx, pos.offsetX, pos.offsetY, cumulativeFloorTileIndex);
+                             cumulativeFloorTileIndex = floorRenderResult.cumulativeTileIndex;
+                             totalFloorFullTiles += floorRenderResult.fullTileCount;
+                             totalFloorCutTiles += floorRenderResult.cutTileCount;
+
+                         } else {
+                             // Render walls with the cumulative wall index and accumulate wall tile counts
+                             const wallRenderResult = surface.render(ctx, pos.offsetX, pos.offsetY, cumulativeWallTileIndex);
+                             cumulativeWallTileIndex = wallRenderResult.cumulativeTileIndex;
+                             totalWallFullTiles += wallRenderResult.fullTileCount;
+                             totalWallCutTiles += wallRenderResult.cutTileCount;
+                         }
+
 
                          // Draw wall labels (W1-W4)
                          if (surface.surfaceType.startsWith('wall')) {
@@ -1119,7 +1210,23 @@
 
                 // TODO: Optional: Draw room boundary lines or connecting lines to make the unfolded view clearer
 
-                 console.log("Total Tiles Rendered:", cumulativeTileIndex); // Log total tiles
+                 console.log("Total Wall Tiles Rendered:", cumulativeWallTileIndex); // Log total wall tiles
+                 console.log("Total Wall Full Tiles:", totalWallFullTiles); // Log total wall full tiles
+                 console.log("Total Wall Cut Tiles:", totalWallCutTiles); // Log total wall cut tiles
+                 console.log("Total Floor Tiles Rendered:", cumulativeFloorTileIndex); // Log total floor tiles
+                 console.log("Total Floor Full Tiles:", totalFloorFullTiles); // Log total floor full tiles
+                 console.log("Total Floor Cut Tiles:", totalFloorCutTiles); // Log total floor cut tiles
+
+
+                 // Return total counts for display in UI
+                 return {
+                     totalWallTiles: cumulativeWallTileIndex,
+                     totalWallFullTiles: totalWallFullTiles,
+                     totalWallCutTiles: totalWallCutTiles,
+                     totalFloorTiles: cumulativeFloorTileIndex,
+                     totalFloorFullTiles: totalFloorFullTiles,
+                     totalFloorCutTiles: totalFloorCutTiles
+                 };
             }
         }
 
@@ -1237,23 +1344,7 @@
             const floorTileWidth = parseFloat(document.getElementById('floorTileWidth').value); // Read floor tile width
             const floorTileHeight = parseFloat(document.getElementById('floorTileHeight').value); // Read floor tile height
             const gap = parseFloat(document.getElementById('gap').value); // Gap is still shared
-            const wallStartPointUI = document.getElementById('wallStartPoint').value; // Read wall start point from UI
-
-             // Map UI value to internal startPoint value (defaulting horizontal start to left)
-             let wallStartPoint;
-             switch(wallStartPointUI) {
-                 case 'bottom':
-                     wallStartPoint = 'bottomLeft';
-                     break;
-                 case 'top':
-                     wallStartPoint = 'topLeft';
-                     break;
-                 case 'center':
-                     wallStartPoint = 'center';
-                     break;
-                 default: // Fallback to bottomLeft
-                     wallStartPoint = 'bottomLeft';
-             }
+            const wallStartPoint = document.getElementById('wallStartPoint').value; // Read wall start point from UI
 
 
             if (isNaN(shortDim) || isNaN(longDim) || isNaN(height) || isNaN(wallTileWidth) || isNaN(wallTileHeight) || isNaN(floorTileWidth) || isNaN(floorTileHeight) || isNaN(gap) || shortDim <= 0 || longDim <= 0 || height <= 0 || wallTileWidth <= 0 || wallTileHeight <= 0 || floorTileWidth <= 0 || floorTileHeight <= 0 || gap < 0) {
@@ -1290,8 +1381,63 @@
             myRoom.setLayoutMode(LAYOUT_MODE.HORIZONTAL); // Fixed to horizontal
 
 
-            // Render the room
-            myRoom.render('roomCanvas');
+            // Render the room and get the tile counts
+            const tileCounts = myRoom.render('roomCanvas');
+
+            // Calculate and display results
+            const floorArea = (shortDim * longDim / 10000).toFixed(2); // cm² to m²
+            const totalWallArea_cm2 = (myRoom.wallShort1.width_cm * myRoom.wallShort1.height_cm +
+                                       myRoom.wallLong1.width_cm * myRoom.wallLong1.height_cm +
+                                       myRoom.wallShort2.width_cm * myRoom.wallShort2.height_cm +
+                                       myRoom.wallLong2.width_cm * myRoom.wallLong2.height_cm);
+            const wallArea_m2 = (totalWallArea_cm2 / 10000).toFixed(2); // cm² to m²
+
+            let totalDoorArea_cm2 = 0;
+            let totalWindowArea_cm2 = 0;
+
+             // Calculate total hole areas from stored configs
+             for (const wallKey in myRoom.holeConfigs) {
+                 myRoom.holeConfigs[wallKey].forEach(hole => {
+                     if (hole.type === 'door') {
+                         totalDoorArea_cm2 += hole.width_cm * hole.height_cm;
+                     } else if (hole.type === 'window') {
+                         totalWindowArea_cm2 += hole.width_cm * hole.height_cm;
+                     }
+                 });
+             }
+
+             const doorArea_m2 = (totalDoorArea_cm2 / 10000).toFixed(2);
+             const windowArea_m2 = (totalWindowArea_cm2 / 10000).toFixed(2);
+             const netWallArea_m2 = ((totalWallArea_cm2 - totalDoorArea_cm2 - totalWindowArea_cm2) / 10000).toFixed(2);
+
+
+            const totalWallTiles = tileCounts.totalWallTiles;
+            const totalWallCutTiles = tileCounts.totalWallCutTiles;
+            const fullWallTiles = totalWallTiles - totalWallCutTiles;
+
+            const totalFloorTiles = tileCounts.totalFloorTiles;
+            const totalFloorCutTiles = tileCounts.totalFloorCutTiles;
+            const fullFloorTiles = totalFloorTiles - totalFloorCutTiles;
+
+            const totalAllTiles = totalWallTiles + totalFloorTiles;
+
+
+            document.getElementById('floorArea').textContent = floorArea;
+            document.getElementById('wallArea').textContent = wallArea_m2; // Display total wall area
+            document.getElementById('doorArea').textContent = doorArea_m2; // Display total door area
+            document.getElementById('windowArea').textContent = windowArea_m2; // Display total window area
+            document.getElementById('netWallArea').textContent = netWallArea_m2; // Display net wall area
+
+            document.getElementById('fullWallTiles').textContent = fullWallTiles;
+            document.getElementById('cutWallTiles').textContent = totalWallCutTiles;
+            document.getElementById('totalWallTiles').textContent = totalWallTiles;
+
+            document.getElementById('fullFloorTiles').textContent = fullFloorTiles;
+            document.getElementById('cutFloorTiles').textContent = totalFloorCutTiles;
+            document.getElementById('totalFloorTiles').textContent = totalFloorTiles;
+
+            document.getElementById('totalAllTiles').textContent = totalAllTiles;
+
         }
 
 
@@ -1312,3 +1458,4 @@
 </body>
 </body>
 </html>
+
