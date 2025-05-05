@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -6,7 +5,145 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>磁磚排版示意圖</title>
     <style>
-        /* 現有樣式保持不變 */
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+        }
+        #controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Adjust column width */
+            gap: 15px;
+            width: 100%;
+            max-width: 900px;
+        }
+        #hole-controls {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            grid-column: 1 / -1; /* Span all columns */
+        }
+        #hole-controls h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .hole-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+         .hole-section h4 {
+             margin-top: 0;
+             margin-bottom: 15px;
+             color: #0056b3;
+         }
+
+         .hole-input-row {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Adjust hole input column width */
+             gap: 10px;
+             margin-bottom: 10px;
+             align-items: center;
+         }
+         .hole-input-row .control-group {
+              margin-bottom: 0;
+         }
+         .hole-input-row label {
+             font-weight: normal; /* Normal font weight for hole labels */
+             margin-bottom: 0;
+         }
+         .hole-input-row input[type="checkbox"] {
+             margin-right: 5px;
+             width: auto; /* Auto width for checkbox */
+         }
+         .hole-input-row .checkbox-label {
+             display: flex;
+             align-items: center;
+              font-weight: bold;
+         }
+         .hole-dimensions-inputs {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+             gap: 10px;
+             grid-column: 1 / -1; /* Span all columns */
+             border-top: 1px dashed #eee;
+             padding-top: 10px;
+             margin-top: 10px;
+         }
+          .hole-dimensions-inputs .control-group {
+              margin-bottom: 0;
+          }
+
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .control-group label {
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .control-group input, .control-group select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+         #roomCanvas {
+             border: 1px solid #ccc;
+             background-color: #fff;
+             margin-top: 20px;
+             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+             display: block; /* Ensure Canvas is a block element */
+              max-width: 100%; /* Ensure Canvas does not exceed container */
+              height: auto; /* Auto height */
+         }
+
+         /* Basic styles for dimension labels */
+         .dimension-text {
+             font-size: 10px;
+             fill: #000; /* Text color */
+         }
+          .dimension-line {
+             stroke: #000; /* Line color */
+             stroke-width: 1;
+             /* marker-end: url(#arrowhead); */ /* Arrowhead marker - need SVG defs */
+              /* marker-start: url(#arrowhead); */ /* Arrowhead marker - need SVG defs */
+          }
+          /* SVG arrowhead definition - Add this if you want arrowheads */
+          /*
+          svg defs marker {
+              overflow: visible;
+          }
+          */
+
     </style>
 </head>
 <body>
@@ -14,40 +151,118 @@
     <h1>磁磚排版示意圖工具</h1>
 
     <div id="controls">
-        <!-- 其他輸入欄位略 -->
-
-        <div id="wall-tiling-start-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
-            <h3>牆面磁磚起鋪點</h3>
-            <div class="hole-input-row">
-                <div class="control-group">
-                    <label for="wallStartPoint">起鋪點:</label>
-                    <select id="wallStartPoint">
-                        <option value="topLeft">左上</option>
-                        <option value="topRight">右上</option>
-                        <option value="bottomLeft">左下</option>
-                        <option value="bottomRight">右下</option>
-                        <option value="center">中心</option>
-                    </select>
-                </div>
-            </div>
+        <div class="control-group">
+            <label for="shortDim">房間短邊 (cm):</label>
+            <input type="number" id="shortDim" value="140" min="10">
         </div>
-
-        <div id="floor-tiling-start-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
-            <h3>地面磁磚起鋪點</h3>
-            <div class="hole-input-row">
-                <div class="control-group">
-                    <label for="floorStartPoint">起鋪點:</label>
-                    <select id="floorStartPoint">
-                        <option value="topLeft">左上</option>
-                        <option value="topRight">右上</option>
-                        <option value="bottomLeft">左下</option>
-                        <option value="bottomRight">右下</option>
-                        <option value="center">中心</option>
-                    </select>
-                </div>
-            </div>
+        <div class="control-group">
+            <label for="longDim">房間長邊 (cm):</label>
+            <input type="number" id="longDim" value="210" min="10">
         </div>
+        <div class="control-group">
+            <label for="height">房間高度 (cm):</label>
+            <input type="number" id="height" value="280" min="10">
+        </div>
+         <div class="control-group">
+             <label for="wallTileWidth">牆面磁磚寬度 (cm):</label>
+             <input type="number" id="wallTileWidth" value="60" min="1">
+         </div>
+          <div class="control-group">
+             <label for="wallTileHeight">牆面磁磚高度 (cm):</label>
+             <input type="number" id="wallTileHeight" value="30" min="1">
+         </div>
+          <div class="control-group">
+             <label for="gap">縫隙 (cm):</label>
+             <input type="number" id="gap" value="0.2" min="0" step="0.01">
+         </div>
 
+         <div id="floor-tile-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+             <h3>地面磁磚設定</h3>
+             <div class="hole-input-row"> <div class="control-group">
+                     <label for="floorTileWidth">地面磁磚寬度 (cm):</label>
+                     <input type="number" id="floorTileWidth" value="60" min="1">
+                 </div>
+                 <div class="control-group">
+                     <label for="floorTileHeight">地面磁磚高度 (cm):</label>
+                     <input type="number" id="floorTileHeight" value="60" min="1"> </div>
+                 </div>
+         </div>
+
+         <div id="wall-tiling-start-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+             <h3>牆面磁磚起鋪點</h3>
+             <div class="hole-input-row"> <div class="control-group">
+                     <label for="wallStartPoint">起鋪點:</label>
+                     <select id="wallStartPoint">
+                         <option value="bottom" selected>下方</option>
+                         <option value="top">上方</option>
+                         <option value="center">中心</option>
+                     </select>
+                 </div>
+             </div>
+         </div>
+
+
+          <div id="hole-controls">
+              <h3>洞口設定 (尺寸設為 0 或留空則不繪製)</h3>
+
+              <div class="hole-section">
+                  <h4>門洞 (將繪製在第一面長邊牆或短邊牆)</h4>
+                  <div id="doorInputGroup">
+                      <div class="hole-input-row">
+                          <div class="control-group">
+                              <label for="doorWallType">所在牆面:</label>
+                              <select id="doorWallType">
+                                   <option value="long" selected>長邊牆面</option>
+                                   <option value="short">短邊牆面</option>
+                              </select>
+                          </div>
+                          <div class="control-group">
+                              <label for="doorSide">靠牆側:</label>
+                              <select id="doorSide">
+                                   <option value="left">左側</option>
+                                   <option value="right">右側</option>
+                              </select>
+                          </div>
+                          <div class="control-group"><label for="doorDistance">距離選定側邊 (cm):</label><input type="number" id="doorDistance" value="0" min="0"></div>
+                      </div>
+                      <div class="hole-dimensions-inputs">
+                          <div class="control-group"><label for="doorY">底部離地 (cm):</label><input type="number" id="doorY" value="0" min="0"></div>
+                          <div class="control-group"><label for="doorW">寬度 (cm):</label><input type="number" id="doorW" value="90" min="0"></div>
+                          <div class="control-group"><label for="doorH">高度 (cm):</label><input type="number" id="doorH" value="210" min="0"></div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="hole-section">
+                  <h4>窗洞 (將繪製在第二面長邊牆或短邊牆)</h4>
+                   <div id="windowInputGroup">
+                      <div class="hole-input-row">
+                          <div class="control-group">
+                              <label for="windowWallType">所在牆面:</label>
+                              <select id="windowWallType" onchange="toggleWindowDimensions()">
+                                   <option value="none">無窗洞</option>
+                                   <option value="long">長邊牆面</option>
+                                   <option value="short">短邊牆面</option>
+                              </select>
+                          </div>
+                           <div class="control-group" id="windowSideOption" style="display: none;">
+                              <label for="windowSide">靠牆側:</label>
+                              <select id="windowSide">
+                                   <option value="left">左側</option>
+                                   <option value="right">右側</option>
+                              </select>
+                           </div>
+                      </div>
+                      <div id="windowDimensions" class="hole-dimensions-inputs" style="display: none;">
+                          <div class="control-group"><label for="windowDistance">距離選定側邊 (cm):</label><input type="number" id="windowDistance" value="0" min="0"></div>
+                          <div class="control-group"><label for="windowY">底部離地 (cm):</label><input type="number" id="windowY" value="0" min="0"></div>
+                          <div class="control-group"><label for="windowW">寬度 (cm):</label><input type="number" id="windowW" value="0" min="0"></div>
+                          <div class="control-group"><label for="windowH">高度 (cm):</label><input type="number" id="windowH" value="0" min="0"></div>
+                      </div>
+                   </div>
+              </div>
+
+              </div>
     </div>
 
     <button onclick="renderRoom()">更新並渲染</button>
@@ -55,36 +270,1045 @@
     <canvas id="roomCanvas"></canvas>
 
     <script>
+        // ====== Configuration Constants ======
+        const SCALE = 2; // cm -> px scale
+        const LAYOUT_MODE = {
+            HORIZONTAL: 'horizontal', // Horizontal side-by-side layout
+            UNFOLDED: 'unfolded'     // Unfolded layout centered around the floor
+        };
+        const DIMENSION_LINE_OFFSET = 15; // Offset for dimension lines in pixels
+
+        // ====== Helper Functions ======
+        function cmToPx(cm) {
+            return cm * SCALE;
+        }
+
+        // Calculate text center position (for tile numbering)
+        // Simplified calculation, should ideally use ctx.measureText
+        function getTextCenteredPos(x, y, width, height, text) {
+            const fontSize = 12; // Estimated font size
+            const textWidth = text.length * (fontSize * 0.6); // Rough estimate of text width
+            const textHeight = fontSize; // Rough estimate of text height
+            return {
+                x: x + width / 2 - textWidth / 2,
+                y: y + height / 2 + textHeight / 3 // Offset slightly upwards for visual centering
+            };
+        }
+
+        // Draw dimension line with text label
+        function drawDimensionLine(ctx, x1, y1, x2, y2, text, offset) {
+            ctx.save();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#000';
+            ctx.font = '10px sans-serif';
+
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Draw text
+            const midX = (x1 + x2) / 2;
+            const midY = (y1 + y2) / 2;
+            const textOffsetX = (x1 === x2) ? offset : 0; // Vertical line offset
+            const textOffsetY = (y1 === y2) ? offset : 0; // Horizontal line offset
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, midX + textOffsetX, midY + textOffsetY);
+
+            ctx.restore();
+        }
+
+        // Update visibility of window side option and dimension inputs based on wall type
+        function toggleWindowDimensions() {
+            const windowWallType = document.getElementById('windowWallType').value;
+            const windowSideOptionDiv = document.getElementById('windowSideOption');
+            const windowDimensionsDiv = document.getElementById('windowDimensions');
+
+            if (windowWallType !== 'none') {
+                windowSideOptionDiv.style.display = 'flex'; // Show side option
+                windowDimensionsDiv.style.display = 'grid'; // Show dimension inputs
+            } else {
+                windowSideOptionDiv.style.display = 'none'; // Hide side option
+                windowDimensionsDiv.style.display = 'none'; // Hide dimension inputs
+                // Clear window input values when hidden
+                document.getElementById('windowDistance').value = 0;
+                document.getElementById('windowY').value = 0;
+                document.getElementById('windowW').value = 0;
+                document.getElementById('windowH').value = 0;
+            }
+        }
+
+
+        // ====== Class Definitions ======
+
+        // Hole class (doors, windows, drains, etc.)
+        class Hole {
+            constructor(type, x_cm, y_cm, width_cm, height_cm, wallHeight_cm) {
+                this.type = type; // 'door', 'window', 'drain', 'light', 'pipe'
+                this.x_cm = x_cm;
+                 // y_cm here is "distance from bottom", calculate y from top for rendering
+                this.y_cm_from_bottom = y_cm; // Store original for clarity
+                this.y_cm_from_top = wallHeight_cm - y_cm - height_cm; // Calculate distance from top
+
+                this.width_cm = width_cm;
+                this.height_cm = height_cm;
+
+                // Convert to pixels
+                this.x_px = cmToPx(this.x_cm);
+                 // y_px is distance from the wall's top-left (canvas area)
+                 this.y_px = cmToPx(this.y_cm_from_top);
+
+
+                this.width_px = cmToPx(this.width_cm);
+                this.height_px = cmToPx(this.height_cm);
+            }
+
+            // Check if a point is within the hole bounds (coordinates should be relative to surface top-left)
+            contains(pointX_px, pointY_px) {
+                 // pointX_px, pointY_px are relative to the surface's top-left
+                return pointX_px >= this.x_px &&
+                       pointX_px < this.x_px + this.width_px &&
+                       pointY_px >= this.y_px &&
+                       pointY_px < this.y_px + this.height_px;
+            }
+             // Render hole outline
+             render(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY) {
+                 // Only render if width and height are positive
+                 if (this.width_px > 0 && this.height_px > 0) {
+                     ctx.save();
+                     ctx.strokeStyle = (this.type === 'door') ? '#FF0000' : '#0000FF'; // Red for door, blue for window
+                     ctx.lineWidth = 2;
+                     ctx.strokeRect(surfaceCanvasOffsetX + this.x_px, surfaceCanvasOffsetY + this.y_px, this.width_px, this.height_px);
+                     ctx.restore();
+                 }
+             }
+        }
+
+        // Base Surface class (common properties and methods for floor, walls, ceiling)
+        class Surface {
+            constructor(width_cm, height_or_depth_cm, tileWidth_cm, tileHeight_cm, gap_cm, startPoint = 'topLeft', surfaceType = 'surface') {
+                this.width_cm = width_cm;
+                this.height_or_depth_cm = height_or_depth_cm; // Depth for floor, height for walls
+                this.tileWidth_cm = tileWidth_cm;
+                this.tileHeight_cm = tileHeight_cm;
+                this.gap_cm = gap_cm;
+                this.startPoint = startPoint; // 'topLeft', 'center', 'bottomLeft', 'bottomRight', 'topRight'
+                this.surfaceType = surfaceType; // 'floor', 'wall-short1', 'wall-long1', etc.
+                this.holes = []; // List of holes
+
+                this.updateDimensions(width_cm, height_or_depth_cm); // Initialize pixel dimensions and row/col counts
+            }
+
+            // Update surface dimensions and recalculate related properties
+            updateDimensions(width_cm, height_or_depth_cm) {
+                 // Avoid updating dimensions if inputs are invalid
+                 if (isNaN(width_cm) || isNaN(height_or_depth_cm) || width_cm <= 0 || height_or_depth_cm <= 0) {
+                     // console.warn(`Invalid dimensions provided for ${this.surfaceType}: ${width_cm}x${height_or_depth_cm}. Skipping update.`);
+                     return; // Skip update if dimensions are invalid
+                 }
+
+                this.width_cm = width_cm;
+                this.height_or_depth_cm = height_or_depth_cm;
+
+                this.width_px = cmToPx(width_cm);
+                this.height_or_depth_px = cmToPx(height_or_depth_cm);
+
+                this.tileWidth_px = cmToPx(this.tileWidth_cm);
+                this.tileHeight_px = cmToPx(this.tileHeight_cm);
+                this.gap_px = cmToPx(this.gap_cm);
+
+                 // Ensure tile size + gap is not zero to avoid division by zero error
+                 const stepX = this.tileWidth_px + this.gap_px;
+                 const stepY = this.tileHeight_px + this.gap_px;
+
+                 // Calculate the number of full tiles that fit
+                 // Use small tolerance for float comparison
+                 const tolerance = 1e-9;
+
+                 const fullCols = stepX > tolerance ? Math.floor((this.width_px + this.gap_px) / stepX) : 0;
+                 const fullRows = stepY > tolerance ? Math.floor((this.height_or_depth_px + this.gap_px) / stepY) : 0;
+
+                 // Calculate remaining space
+                 let remainingWidth_px = this.width_px - (fullCols * stepX - this.gap_px);
+                 let remainingHeight_px = this.height_or_depth_px - (fullRows * stepY - this.gap_px);
+
+                 // Adjust row/col count if remaining space can fit a cut tile (and is greater than a small tolerance)
+                 this.cols = fullCols;
+                 if (remainingWidth_px > tolerance) this.cols++;
+
+                 this.rows = fullRows;
+                 if (remainingHeight_px > tolerance) this.rows++;
+
+
+                 // Actual layout dimensions calculation for start offset - based on final cols/rows
+                 let actualLayoutWidth_px = this.cols > 0 ? (this.cols - 1) * stepX + this.tileWidth_px : 0;
+                 if (this.cols > 1) actualLayoutWidth_px += this.gap_px; // Add final gap if more than one tile
+
+                 let actualLayoutHeight_px = this.rows > 0 ? (this.rows - 1) * stepY + this.tileHeight_px : 0;
+                 if (this.rows > 1) actualLayoutHeight_px += this.gap_px; // Add final gap if more than one tile
+
+                  // Handle single tile case explicitly or if remaining space is less than tile size but > tolerance
+                 if (this.cols === 1 && this.width_px > tolerance) actualLayoutWidth_px = Math.min(this.width_px, this.tileWidth_px);
+                 if (this.rows === 1 && this.height_or_depth_px > tolerance) actualLayoutHeight_px = Math.min(this.height_or_depth_px, this.tileHeight_px);
+
+
+                 // Ensure layout dimensions do not exceed surface dimensions (with tolerance)
+                 this.layoutWidth_px = Math.min(actualLayoutWidth_px, this.width_px + tolerance);
+                 this.layoutHeight_px = Math.min(actualLayoutHeight_px, this.height_or_depth_px + tolerance);
+            }
+
+             // Update tile configuration (tile size, gap, start point)
+             updateTileConfig(tileWidth_cm, tileHeight_cm, gap_cm, startPoint) {
+                  // Avoid updating if inputs are invalid
+                 if (isNaN(tileWidth_cm) || isNaN(tileHeight_cm) || isNaN(gap_cm) || tileWidth_cm <= 0 || tileHeight_cm <= 0 || gap_cm < 0) {
+                     // console.warn(`Invalid tile config provided for ${this.surfaceType}. Skipping update.`);
+                     return; // Skip update if config is invalid
+                 }
+
+                 this.tileWidth_cm = tileWidth_cm;
+                 this.tileHeight_cm = tileHeight_cm;
+                 this.gap_cm = gap_cm;
+                 this.startPoint = startPoint; // Update start point
+                 this.updateDimensions(this.width_cm, this.height_or_depth_cm); // Recalculate pixel dimensions and row/col counts
+             }
+
+
+            addHole(hole) {
+                 if (hole instanceof Hole) {
+                     this.holes.push(hole);
+                 } else {
+                     console.error("Invalid hole object added to surface.");
+                 }
+            }
+             clearHoles() {
+                 this.holes = [];
+             }
+
+
+            // Calculate start offset based on the start point (relative to surface top-left)
+            calculateStartOffset() {
+                let startX = 0;
+                let startY = 0;
+
+                 // Recalculate actual layout dimensions based on the final cols/rows
+                 const stepX = this.tileWidth_px + this.gap_px;
+                 const stepY = this.tileHeight_px + this.gap_px;
+
+                 let currentLayoutWidth = 0;
+                 for(let c = 0; c < this.cols; c++) {
+                     let tileW = this.tileWidth_px;
+                      // Calculate actual width for the last tile in a row
+                      if (c === this.cols - 1 && this.cols > 0) { // Check if it's the last column and there's at least one column
+                          const coveredWidth = (this.cols - 1) * stepX + this.tileWidth_px + (this.cols > 1 ? this.gap_px : 0);
+                          const tolerance = 1e-9;
+                          if (this.width_px > coveredWidth + tolerance) { // Use tolerance for comparison
+                              tileW = this.width_px - ((this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0));
+                              if (tileW < 0) tileW = 0;
+                           } else if (Math.abs(this.width_px - coveredWidth) <= tolerance && this.cols === 1) {
+                                  // Special case for a single tile that perfectly fits or is slightly smaller
+                                  tileW = this.width_px;
+                             }
+                      }
+                     currentLayoutWidth += tileW + (c < this.cols - 1 ? this.gap_px : 0);
+                 }
+
+                  let currentLayoutHeight = 0;
+                  for(let r = 0; r < this.rows; r++) {
+                      let tileH = this.tileHeight_px;
+                       // Calculate actual height for the last tile in a column
+                       if (r === this.rows - 1 && this.rows > 0) { // Check if it's the last row and there's at least one row
+                           const coveredHeight = (this.rows - 1) * stepY + this.tileHeight_px + (this.rows > 1 ? this.gap_px : 0);
+                            const tolerance = 1e-9;
+                           if (this.height_or_depth_px > coveredHeight + tolerance) { // Use tolerance for comparison
+                                tileH = this.height_or_depth_px - ((this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0));
+                                if (tileH < 0) tileH = 0;
+                           } else if (Math.abs(this.height_or_depth_px - coveredHeight) <= tolerance && this.rows === 1) {
+                                    // Special case for a single tile that perfectly fits or is slightly smaller
+                                    tileH = this.height_or_depth_px;
+                               }
+                       }
+                      currentLayoutHeight += tileH + (r < this.rows - 1 ? this.gap_px : 0);
+                  }
+
+                switch (this.startPoint) {
+                    case 'center':
+                         startX = (this.width_px - currentLayoutWidth) / 2;
+                         startY = (this.height_or_depth_px - currentLayoutHeight) / 2;
+                        break;
+                    case 'bottomLeft':
+                         startX = 0;
+                         startY = this.height_or_depth_px - currentLayoutHeight;
+                         break;
+                    case 'bottomRight':
+                         startX = this.width_px - currentLayoutWidth;
+                         startY = this.height_or_depth_px - currentLayoutHeight;
+                         break;
+                    case 'topLeft': // default for floor
+                         startX = 0;
+                         startY = 0;
+                         break;
+                    case 'topRight':
+                         startX = this.width_px - currentLayoutWidth;
+                         startY = 0;
+                         break;
+                     // Handle simplified 'bottom' and 'top' for walls
+                    case 'bottom': // Map 'bottom' to 'bottomLeft' for walls
+                         startX = 0;
+                         startY = this.height_or_depth_px - currentLayoutHeight;
+                         break;
+                    case 'top': // Map 'top' to 'topLeft' for walls
+                         startX = 0;
+                         startY = 0;
+                         break;
+                    default: // Fallback to topLeft
+                         startX = 0;
+                         startY = 0;
+                         break;
+                }
+                // Ensure offsets are not negative due to floating point issues
+                return { startX: Math.max(0, startX), startY: Math.max(0, startY) };
+            }
+
+            // Abstract method: Render the specific content of the surface (implemented by subclasses)
+            // surfaceCanvasOffsetX, surfaceCanvasOffsetY are the drawing start points for this surface on the overall canvas
+            renderContent(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex) {
+                console.error("renderContent method must be implemented by subclass");
+                return cumulativeTileIndex; // Return updated index
+            }
+
+            // Public render method: Set canvas state and call renderContent
+            render(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex) {
+                ctx.save();
+                // Can set some general styles or clip paths if needed
+                const updatedIndex = this.renderContent(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex);
+
+                 // Draw all hole outlines
+                 // Holes are drawn relative to the surface's top-left (this.x_px, this.y_px)
+                 this.holes.forEach(hole => {
+                     hole.render(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY);
+                 });
+
+                ctx.restore();
+                 return updatedIndex; // Return updated index
+            }
+        }
+
+        // Floor class
+        class Floor extends Surface {
+            constructor(width_cm, depth_cm, tileWidth_cm, tileHeight_cm, gap_cm, startPoint = 'topLeft') {
+                super(width_cm, depth_cm, tileWidth_cm, tileHeight_cm, gap_cm, startPoint, 'floor');
+                this.depth_cm = depth_cm; // Renamed to depth to distinguish from wall height
+                this.depth_px = cmToPx(depth_cm);
+                this.height_or_depth_cm = depth_cm; // Maintain consistency with base class property
+                this.height_or_depth_px = cmToPx(depth_cm);
+            }
+
+            renderContent(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex) {
+                const { startX, startY } = this.calculateStartOffset();
+
+                // Set tile styles
+                const defaultFillStyle = '#D3D3D3'; // Light grey tile
+                const cutTileFillStyle = '#A9A9A9'; // Dark grey cut tile
+                const collisionFillStyle = '#FFB6C1'; // Pink collision tile
+                ctx.strokeStyle = '#A9A9A9'; // Dark grey gap
+                ctx.lineWidth = this.gap_px;
+
+                const stepX = this.tileWidth_px + this.gap_px;
+                const stepY = this.tileHeight_px + this.gap_px;
+
+                 const tolerance = 1e-9; // Use tolerance for float comparison
+
+                // Draw tiles and gaps
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        // Calculate tile top-left coordinates within the surface
+                        const tileInnerX = startX + c * stepX;
+                        const tileInnerY = startY + r * stepY;
+
+                        // Calculate actual width and height of the current tile (considering cuts)
+                        let currentTileWidth_px = this.tileWidth_px;
+                        let currentTileHeight_px = this.tileHeight_px;
+
+                         // Calculate actual width for the last tile in a row
+                         if (c === this.cols - 1 && this.cols > 0) {
+                             const coveredWidth = startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0);
+                             if (this.width_px > coveredWidth + tolerance) { // Use tolerance for comparison
+                                 currentTileWidth_px = this.width_px - (startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0));
+                                 if (currentTileWidth_px < 0) currentTileWidth_px = 0; // Should not be negative
+                             } else if (Math.abs(this.width_px - coveredWidth) <= tolerance && this.cols === 1) {
+                                  // Special case for a single tile that perfectly fits or is slightly smaller
+                                  currentTileWidth_px = this.width_px;
+                             }
+                         }
+
+                          // Calculate actual height for the last tile in a column
+                          if (r === this.rows - 1 && this.rows > 0) {
+                              const coveredHeight = startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0);
+                               if (this.height_or_depth_px > coveredHeight + tolerance) { // Use tolerance for comparison
+                                   currentTileHeight_px = this.height_or_depth_px - (startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0));
+                                   if (currentTileHeight_px < 0) currentTileHeight_px = 0; // Should not be negative
+                               } else if (Math.abs(this.height_or_depth_px - coveredHeight) <= tolerance && this.rows === 1) {
+                                    // Special case for a single tile that perfectly fits or is slightly smaller
+                                    currentTileHeight_px = this.height_or_depth_px;
+                               }
+                          }
+
+                        // Check if it's a cut tile based on the calculated current dimensions
+                         const isCutTile = Math.abs(currentTileWidth_px - this.tileWidth_px) > tolerance || Math.abs(currentTileHeight_px - this.tileHeight_px) > tolerance;
+
+
+                        // TODO: Check if within floor hole bounds (e.g., drain) - Assuming no holes on floor for now
+                         let isInsideHole = false; // Placeholder
+
+
+                        // Only draw tiles with positive dimensions
+                        if (currentTileWidth_px > tolerance && currentTileHeight_px > tolerance) {
+                             if (isInsideHole) {
+                                 ctx.fillStyle = collisionFillStyle;
+                             } else if (isCutTile) {
+                                 ctx.fillStyle = cutTileFillStyle;
+                             } else {
+                                 ctx.fillStyle = defaultFillStyle;
+                             }
+
+                            // Calculate tile top-left coordinates on the overall canvas
+                            const tileCanvasX = surfaceCanvasOffsetX + tileInnerX;
+                            const tileCanvasY = surfaceCanvasOffsetY + tileInnerY;
+
+                            // Draw tile
+                            ctx.fillRect(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px);
+
+                            // Draw gap (can be done with strokeRect or separate lines)
+                            // ctx.strokeRect(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px);
+
+                            // Draw tile code (cumulative numbering) - Only for non-colliding tiles
+                             if (!isInsideHole) {
+                                 cumulativeTileIndex++;
+                                 const tileCode = `${cumulativeTileIndex}`; // Use cumulative index
+                                 ctx.fillStyle = '#000'; // Black text
+                                 ctx.font = '12px sans-serif'; // Set font for text
+                                 // Calculate text position based on the actual current tile size
+                                 const textPos = getTextCenteredPos(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px, tileCode);
+                                 ctx.fillText(tileCode, textPos.x, textPos.y);
+                             }
+                        }
+                    }
+                }
+
+                // TODO: Draw floor dimension labels (complex, needs calculation of label positions)
+                return cumulativeTileIndex; // Return updated index
+            }
+        }
+
+        // Wall class
+        class Wall extends Surface {
+            constructor(width_cm, height_cm, tileWidth_cm, tileHeight_cm, gap_cm, startPoint = 'bottomLeft', surfaceType = 'wall') {
+                super(width_cm, height_cm, tileWidth_cm, tileHeight_cm, gap_cm, startPoint, surfaceType);
+                this.height_cm = height_cm;
+                this.height_or_depth_cm = height_cm; // Maintain consistency with base class property
+                this.height_or_depth_px = cmToPx(height_cm);
+            }
+
+            // Wall-specific method to add a hole (accepts Hole instance)
+            addHole(hole) {
+                 if (hole instanceof Hole) {
+                     this.holes.push(hole);
+                 } else {
+                     console.error("Invalid hole object added to wall.");
+                 }
+            }
+
+            renderContent(ctx, surfaceCanvasOffsetX, surfaceCanvasOffsetY, cumulativeTileIndex) {
+                const { startX, startY } = this.calculateStartOffset();
+
+                // Set tile styles
+                const defaultFillStyle = '#D3D3D3'; // Light grey tile
+                const cutTileFillStyle = '#A9A9A9'; // Dark grey cut tile
+                const collisionFillStyle = '#FFB6C1'; // Pink collision tile
+                ctx.strokeStyle = '#A9A9A9'; // Dark grey gap
+                ctx.lineWidth = this.gap_px;
+
+                const stepX = this.tileWidth_px + this.gap_px;
+                const stepY = this.tileHeight_px + this.gap_px;
+
+                 const tolerance = 1e-9; // Use tolerance for float comparison
+
+                // Draw tiles and gaps
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        // Calculate tile top-left coordinates within the surface (relative to surface top-left)
+                        const tileInnerX = startX + c * stepX;
+                         // For walls starting from bottomLeft, tileInnerY is distance from TOP of the wall area
+                        const tileInnerY = startY + r * stepY;
+
+
+                        // Calculate actual width and height of the current tile (considering cuts)
+                        let currentTileWidth_px = this.tileWidth_px;
+                        let currentTileHeight_px = this.tileHeight_px;
+
+                         // Calculate actual width for the last tile in a row
+                         if (c === this.cols - 1 && this.cols > 0) {
+                             const coveredWidth = startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0);
+                             if (this.width_px > coveredWidth + tolerance) { // Use tolerance for comparison
+                                 currentTileWidth_px = this.width_px - (startX + (this.cols - 1) * stepX + (this.cols > 1 ? this.gap_px : 0));
+                                 if (currentTileWidth_px < 0) currentTileWidth_px = 0; // Should not be negative
+                             } else if (Math.abs(this.width_px - coveredWidth) <= tolerance && this.cols === 1) {
+                                  // Special case for a single tile that perfectly fits or is slightly smaller
+                                  currentTileWidth_px = this.width_px;
+                             }
+                         }
+
+                          // Calculate actual height for the last tile in a column
+                          if (r === this.rows - 1 && this.rows > 0) {
+                              const coveredHeight = startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0);
+                               if (this.height_or_depth_px > coveredHeight + tolerance) { // Use tolerance for comparison
+                                   currentTileHeight_px = this.height_or_depth_px - (startY + (this.rows - 1) * stepY + (this.rows > 1 ? this.gap_px : 0));
+                                   if (currentTileHeight_px < 0) currentTileHeight_px = 0; // Should not be negative
+                               } else if (Math.abs(this.height_or_depth_px - coveredHeight) <= tolerance && this.rows === 1) {
+                                    // Special case for a single tile that perfectly fits or is slightly smaller
+                                    currentTileHeight_px = this.height_or_depth_px;
+                               }
+                          }
+
+
+                        // Check if it's a cut tile based on calculated dimensions
+                         const isCutTile = Math.abs(currentTileWidth_px - this.tileWidth_px) > tolerance || Math.abs(currentTileHeight_px - this.tileHeight_px) > tolerance;
+
+
+                        // Calculate tile center coordinates within the surface (relative to surface top-left)
+                        const tileCenterX = tileInnerX + currentTileWidth_px / 2;
+                        const tileCenterY = tileInnerY + currentTileHeight_px / 2;
+
+
+                        // Check if within door/window hole bounds
+                        let isInsideHole = false;
+                        for (const hole of this.holes) {
+                             // hole.contains expects point relative to surface's top-left, which tileCenterX/Y are
+                            if (hole.contains(tileCenterX, tileCenterY)) { // Check center of tile
+                                isInsideHole = true;
+                                break;
+                            }
+                        }
+
+                        // Calculate tile top-left coordinates on the overall canvas
+                        const tileCanvasX = surfaceCanvasOffsetX + tileInnerX;
+                        const tileCanvasY = surfaceCanvasOffsetY + tileInnerY;
+
+                        // Only draw tiles with positive dimensions
+                        if (currentTileWidth_px > tolerance && currentTileHeight_px > tolerance) {
+                             if (isInsideHole) {
+                                 ctx.fillStyle = collisionFillStyle;
+                             } else if (isCutTile) {
+                                 ctx.fillStyle = cutTileFillStyle;
+                             } else {
+                                 ctx.fillStyle = defaultFillStyle;
+                             }
+
+                            // Draw tile
+                            ctx.fillRect(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px);
+                            // Draw gap
+                            // ctx.strokeRect(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px);
+
+                            // Draw tile code (cumulative numbering) - Only for non-colliding tiles
+                             if (!isInsideHole) {
+                                 cumulativeTileIndex++;
+                                 const tileCode = `${cumulativeTileIndex}`; // Use cumulative index
+                                 ctx.fillStyle = '#000'; // Black text
+                                 ctx.font = '12px sans-serif'; // Set font for text
+                                 // Calculate text position based on the actual current tile size
+                                 const textPos = getTextCenteredPos(tileCanvasX, tileCanvasY, currentTileWidth_px, currentTileHeight_px, tileCode);
+                                 ctx.fillText(tileCode, textPos.x, textPos.y);
+                             }
+                        }
+                    }
+                }
+
+                 // Draw ceiling height dashed line
+                 ctx.save();
+                 ctx.strokeStyle = '#000';
+                 ctx.lineWidth = 1;
+                 ctx.setLineDash([5, 5]); // Set dashed line style
+                 // Dashed line position is at the top of the wall
+                 const ceilingLineY = surfaceCanvasOffsetY;
+                 ctx.beginPath();
+                 ctx.moveTo(surfaceCanvasOffsetX, ceilingLineY);
+                 ctx.lineTo(surfaceCanvasOffsetX + this.width_px, ceilingLineY);
+                 ctx.stroke();
+                 ctx.restore();
+
+
+                // TODO: Draw wall dimension labels
+                 // Hole outlines are drawn universally in Surface.render
+                 return cumulativeTileIndex; // Return updated index
+            }
+        }
+
+        // Room class (manages all surfaces and layout mode)
+        class Room {
+            constructor(shortDim_cm, longDim_cm, height_cm) {
+                this.shortDim_cm = shortDim_cm;
+                this.longDim_cm = longDim_cm;
+                this.height_cm = height_cm;
+
+                // Initialize surfaces with default dimensions and tile configs
+                const defaultWallTileWidth = 60; // cm
+                const defaultWallTileHeight = 30; // cm
+                const defaultFloorTileWidth = 60; // cm
+                const defaultFloorTileHeight = 60; // cm
+                const defaultGap = 0.2; // cm
+                const defaultStartPointFloor = 'topLeft';
+                const defaultStartPointWall = 'bottomLeft'; // Default wall start point
+
+                 // Create floor with its specific default tile dimensions
+                this.floor = new Floor(this.longDim_cm, this.shortDim_cm, defaultFloorTileWidth, defaultFloorTileHeight, defaultGap, defaultStartPointFloor);
+                // Create walls with wall-specific default tile dimensions and default start point
+                this.wallShort1 = new Wall(this.shortDim_cm, this.height_cm, defaultWallTileWidth, defaultWallTileHeight, defaultGap, defaultStartPointWall, 'wall-short1');
+                this.wallLong1 = new Wall(this.longDim_cm, this.height_cm, defaultWallTileWidth, defaultWallTileHeight, defaultGap, defaultStartPointWall, 'wall-long1');
+                this.wallShort2 = new Wall(this.shortDim_cm, this.height_cm, defaultWallTileWidth, defaultWallTileHeight, defaultGap, defaultStartPointWall, 'wall-short2');
+                this.wallLong2 = new Wall(this.longDim_cm, this.height_cm, defaultWallTileWidth, defaultWallTileHeight, defaultGap, defaultStartPointWall, 'wall-long2');
+
+                // Optional: Ceiling
+                // this.ceiling = new Floor(this.longDim_cm, this.shortDim_cm, defaultWallTileWidth, defaultWallTileHeight, defaultGap, defaultStartPointFloor, 'ceiling');
+
+                this.surfaces = [this.floor, this.wallShort1, this.wallLong1, this.wallShort2, this.wallLong2];
+                // if (this.ceiling) this.surfaces.push(this.ceiling);
+
+                // Layout mode is fixed to horizontal side-by-side in this version
+                this.currentLayoutMode = LAYOUT_MODE.HORIZONTAL;
+
+                // Store hole configurations to recreate them when dimensions are updated
+                // Use a more general structure for storage, easy to read from UI
+                this.holeConfigs = {
+                    'long1': [], // For doors on long wall 1
+                    'long2': [], // For windows on long wall 2
+                    'short1': [], // For doors on short wall 1
+                    'short2': []  // For windows on short wall 2
+                };
+                 // Map wall type strings to surface instances
+                 this.wallSurfaceMap = {
+                      'long1': this.wallLong1,
+                      'long2': this.wallLong2,
+                      'short1': this.wallShort1,
+                      'short2': this.wallShort2
+                  };
+                 // Map surfaceType to display label
+                 this.surfaceLabels = {
+                     'wall-short1': 'W1',
+                     'wall-long1': 'W2',
+                     'wall-short2': 'W3',
+                     'wall-long2': 'W4',
+                     'floor': '地面' // Label for floor
+                 };
+            }
+
+            // Store hole configuration, do not create Hole instance directly
+            addHoleConfig(wallSideKey, holeConfig) {
+                if (this.holeConfigs[wallSideKey]) {
+                    this.holeConfigs[wallSideKey].push(holeConfig);
+                } else {
+                    console.warn(`Invalid wall side key for adding hole config: ${wallSideKey}`);
+                }
+            }
+
+             // Create Hole instances for walls based on stored configurations
+             applyHoleConfigs() {
+                 // Clear *all* existing holes from *all* wall surfaces
+                 this.surfaces.forEach(surface => {
+                     if (surface instanceof Wall) {
+                         surface.clearHoles();
+                     }
+                 });
+
+                 // Add holes based on the updated holeConfigs
+                 for (const wallSideKey in this.holeConfigs) {
+                     const wallSurface = this.wallSurfaceMap[wallSideKey];
+                     if (wallSurface) {
+                         const configs = this.holeConfigs[wallSideKey];
+                         configs.forEach(config => {
+                              // Only add if dimensions are valid
+                             if (config.width_cm > 0 && config.height_cm > 0) {
+                                 // Pass wall height to Hole constructor for correct Y calculation
+                                 wallSurface.addHole(new Hole(config.type, config.x_cm, config.y_cm, config.width_cm, config.height_cm, wallSurface.height_cm));
+                             } else {
+                                 // console.warn(`Skipping hole ${config.type} on ${wallSideKey} due to zero or negative dimensions.`);
+                             }
+                         });
+                     }
+                 }
+             }
+
+
+            // Update room dimensions (affects all surface dimensions)
+            updateDimensions(shortDim_cm, longDim_cm, height_cm) {
+                // Validate inputs before updating
+                 if (isNaN(shortDim_cm) || isNaN(longDim_cm) || isNaN(height_cm) || shortDim_cm <= 0 || longDim_cm <= 0 || height_cm <= 0) {
+                     console.error("Invalid room dimensions provided. Skipping update.");
+                     return;
+                 }
+
+                this.shortDim_cm = shortDim_cm;
+                this.longDim_cm = longDim_cm;
+                this.height_cm = height_cm;
+
+                // Notify all surfaces to update their dimensions
+                this.floor.updateDimensions(this.longDim_cm, this.shortDim_cm);
+                this.wallShort1.updateDimensions(this.shortDim_cm, this.height_cm);
+                this.wallLong1.updateDimensions(this.longDim_cm, this.height_cm);
+                this.wallShort2.updateDimensions(this.shortDim_cm, this.height_cm);
+                this.wallLong2.updateDimensions(this.longDim_cm, this.height_cm);
+                // if (this.ceiling) this.ceiling.updateDimensions(this.longDim_cm, this.shortDim_cm);
+
+                // Note: applyHoleConfigs is now called in renderRoom after updating dimensions
+            }
+
+            // Update tile configuration for a specific surface (tile size, gap, start point)
+            updateSurfaceTileConfig(surfaceType, tileWidth_cm, tileHeight_cm, gap_cm, startPoint) {
+                const surface = this.surfaces.find(s => s.surfaceType === surfaceType);
+                if (surface) {
+                     surface.updateTileConfig(tileWidth_cm, tileHeight_cm, gap_cm, startPoint);
+                } else {
+                    console.warn(`Surface type "${surfaceType}" not found.`);
+                }
+            }
+
+             // New method to specifically update floor tile configuration
+             updateFloorTileConfig(tileWidth_cm, tileHeight_cm, gap_cm, startPoint) {
+                 this.floor.updateTileConfig(tileWidth_cm, tileHeight_cm, gap_cm, startPoint);
+             }
+
+
+            // Set layout mode (fixed to HORIZONTAL in this version)
+            setLayoutMode(mode) {
+                 // Fixed to HORIZONTAL, ignore passed mode
+                 this.currentLayoutMode = LAYOUT_MODE.HORIZONTAL;
+            }
+
+            // Calculate the offset position for each surface on the Canvas and the total Canvas size
+            calculateLayout() {
+                const positions = new Map(); // Map<Surface, { offsetX, offsetY }>
+                const floor = this.floor;
+                // Use dimensions from specific walls for layout calculation
+                const wallShort1_px_width = this.wallShort1.width_px;
+                const wallLong1_px_width = this.wallLong1.width_px;
+                const wallShort2_px_width = this.wallShort2.width_px;
+                const wallLong2_px_width = this.wallLong2.width_px;
+                const wallHeight_px = this.wallLong1.height_or_depth_px; // Assume all walls have same height
+
+
+                let canvasWidth = 0;
+                let canvasHeight = 0;
+                const padding = 50; // Increased padding for dimension labels
+
+                // Horizontal side-by-side layout (fixed mode)
+                // Layout order: ShortWall1, LongWall1, ShortWall2, LongWall2 (side-by-side), Floor below aligned with LongWall1
+
+                const ws1_x = padding;
+                const wl1_x = ws1_x + wallShort1_px_width + padding;
+                const ws2_x = wl1_x + wallLong1_px_width + padding;
+                const wl2_x = ws2_x + wallShort2_px_width + padding;
+                // Place walls at the top
+                const wall_y = padding;
+                // Place floor below walls (Use wall height for vertical spacing)
+                const floor_y = wall_y + wallHeight_px + padding;
+
+
+                positions.set(this.wallShort1, { offsetX: ws1_x, offsetY: wall_y });
+                positions.set(this.wallLong1, { offsetX: wl1_x, offsetY: wall_y });
+                positions.set(this.wallShort2, { offsetX: ws2_x, offsetY: wall_y });
+                positions.set(this.wallLong2, { offsetX: wl2_x, offsetY: wall_y });
+
+                // Place floor below walls, aligned with LongWall1
+                const floor_x = wl1_x; // Align floor left with wallLong1 left
+                positions.set(this.floor, { offsetX: floor_x, offsetY: floor_y });
+
+                // Calculate total canvas size
+                canvasWidth = wl2_x + wallLong2_px_width + padding;
+                canvasHeight = floor_y + this.floor.height_or_depth_px + padding; // Walls height + Floor height + padding
+
+
+                 return { positions, canvasWidth, canvasHeight };
+            }
+
+            // Render the entire room to the Canvas
+            render(canvasId) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) {
+                    console.error(`Canvas element with ID "${canvasId}" not found.`);
+                    return;
+                }
+                const ctx = canvas.getContext('2d');
+
+                // Calculate positions and required canvas size for each surface
+                const { positions, canvasWidth, canvasHeight } = this.calculateLayout();
+
+                // Set Canvas size
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+
+                // Clear Canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#F0F0F0'; // Set background color
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                let cumulativeTileIndex = 0; // Initialize cumulative index
+
+                // Iterate through all surfaces and render (fixed order ShortWall1, LongWall1, ShortWall2, LongWall2, Floor)
+                const renderingOrder = [this.wallShort1, this.wallLong1, this.wallShort2, this.wallLong2, this.floor];
+
+                 renderingOrder.forEach(surface => {
+                     const pos = positions.get(surface);
+                     if (pos) {
+                         // Pass and update the cumulative index
+                         cumulativeTileIndex = surface.render(ctx, pos.offsetX, pos.offsetY, cumulativeTileIndex);
+
+                         // Draw wall labels (W1-W4)
+                         if (surface.surfaceType.startsWith('wall')) {
+                             const wallLabel = this.surfaceLabels[surface.surfaceType] || surface.surfaceType;
+                             ctx.save();
+                             ctx.fillStyle = '#333';
+                             ctx.font = '14px sans-serif';
+                             ctx.textAlign = 'center';
+                             ctx.textBaseline = 'bottom';
+                             // Position label above the wall, centered horizontally
+                             const labelX = pos.offsetX + surface.width_px / 2;
+                             const labelY = pos.offsetY - 5; // Small offset above the wall
+                             ctx.fillText(wallLabel, labelX, labelY);
+                             ctx.restore();
+                         }
+
+                         // Draw dimension lines and labels
+                         const dimLineOffset = DIMENSION_LINE_OFFSET;
+
+                         // Draw width dimension
+                         drawDimensionLine(ctx,
+                             pos.offsetX, pos.offsetY - dimLineOffset, // Start point above top-left
+                             pos.offsetX + surface.width_px, pos.offsetY - dimLineOffset, // End point above top-right
+                             `${surface.width_cm} cm`,
+                             -dimLineOffset // Text offset above the line
+                         );
+
+                         // Draw height/depth dimension
+                         if (surface.surfaceType.startsWith('wall')) {
+                             // For walls, draw height on the left side
+                              drawDimensionLine(ctx,
+                                  pos.offsetX - dimLineOffset, pos.offsetY, // Start point left of top-left
+                                  pos.offsetX - dimLineOffset, pos.offsetY + surface.height_or_depth_px, // End point left of bottom-left
+                                  `${surface.height_or_depth_cm} cm`,
+                                  -dimLineOffset // Text offset to the left of the line
+                              );
+                         } else if (surface.surfaceType === 'floor') {
+                             // For floor, draw depth on the left side
+                              drawDimensionLine(ctx,
+                                   pos.offsetX - dimLineOffset, pos.offsetY, // Start point left of top-left
+                                   pos.offsetX - dimLineOffset, pos.offsetY + surface.height_or_depth_px, // End point left of bottom-left
+                                   `${surface.height_or_depth_cm} cm`,
+                                   -dimLineOffset // Text offset to the left of the line
+                               );
+                         }
+
+
+                     } else {
+                         console.warn(`Position not calculated for surface: ${surface.surfaceType}. Skipping render.`);
+                     }
+                 });
+
+
+                // TODO: Optional: Draw room boundary lines or connecting lines to make the unfolded view clearer
+
+                 console.log("Total Tiles Rendered:", cumulativeTileIndex); // Log total tiles
+            }
+        }
+
+        // ====== Global Room Instance and Render Function ======
+        let myRoom = null; // Global room instance
+
+        // Read hole information from UI and update myRoom's holeConfigs
+        function updateHoleConfigsFromUI() {
+             if (!myRoom) return;
+
+             // Clear existing hole configurations
+             myRoom.holeConfigs = {
+                 'long1': [],
+                 'long2': [],
+                 'short1': [],
+                 'short2': []
+             };
+
+            // Read door information
+            const doorWallType = document.getElementById('doorWallType').value; // 'long' or 'short'
+            const doorSide = document.getElementById('doorSide').value; // left or right
+            const doorDistance = parseFloat(document.getElementById('doorDistance').value);
+            const doorY = parseFloat(document.getElementById('doorY').value); // Bottom distance
+            const doorW = parseFloat(document.getElementById('doorW').value);
+            const doorH = parseFloat(document.getElementById('doorH').value);
+
+             // Determine the target wall key for the door (long1 or short1)
+             const doorTargetWallKey = doorWallType === 'long' ? 'long1' : 'short1';
+
+             // Get the specific target wall surface instance for the door
+             const doorWallSurface = myRoom.wallSurfaceMap[doorTargetWallKey];
+             let doorWallWidth_cm = 0;
+             if (doorWallSurface) {
+                  doorWallWidth_cm = doorWallSurface.width_cm;
+             } else {
+                  console.error(`Door target wall type "${doorTargetWallKey}" not found in surface map.`);
+                  // Do not add hole if wall surface is not found
+                  return; // Exit function if critical wall is missing
+             }
+
+            // Calculate doorX_cm based on the selected side (left/right) and distance
+            let doorX_cm;
+            if (doorSide === 'left') {
+                doorX_cm = doorDistance;
+            } else { // doorSide === 'right'
+                doorX_cm = doorWallWidth_cm - doorDistance - doorW;
+            }
+
+             // Add door hole config if dimensions are valid and within bounds (with tolerance)
+             const tolerance = 1e-9;
+             if (!isNaN(doorX_cm) && !isNaN(doorY) && !isNaN(doorW) && !isNaN(doorH) && doorW > tolerance && doorH > tolerance && doorDistance >= 0) {
+                 // Ensure door is within wall bounds
+                 if (doorX_cm >= -tolerance && doorX_cm + doorW <= doorWallWidth_cm + tolerance) {
+                     myRoom.addHoleConfig(doorTargetWallKey, { type: 'door', x_cm: Math.max(0, doorX_cm), y_cm: doorY, width_cm: doorW, height_cm: doorH }); // Ensure x is not negative
+                 } else {
+                      console.warn(`Door position out of bounds for ${doorTargetWallKey} (${doorWallWidth_cm}cm). Door (X=${doorX_cm}cm, W=${doorW}cm) will not be drawn.`);
+                 }
+             } else {
+                 console.warn("Invalid door dimensions or distance. Door will not be drawn.");
+             }
+
+
+            // Read window information
+            const windowWallType = document.getElementById('windowWallType').value; // 'none', 'long', or 'short'
+            if (windowWallType !== 'none') {
+                const windowSide = document.getElementById('windowSide').value; // left or right
+                const windowDistance = parseFloat(document.getElementById('windowDistance').value);
+                const windowY = parseFloat(document.getElementById('windowY').value); // Bottom distance
+                const windowW = parseFloat(document.getElementById('windowW').value);
+                const windowH = parseFloat(document.getElementById('windowH').value);
+
+                 // Determine the target wall key for the window (long2 or short2)
+                 const windowTargetWallKey = windowWallType === 'long' ? 'long2' : 'short2'; // Assuming long windows on long2, short windows on short2
+
+                 // Get the specific target wall surface instance for the window
+                 const windowWallSurface = myRoom.wallSurfaceMap[windowTargetWallKey];
+                 let windowWallWidth_cm = 0;
+                 if (windowWallSurface) {
+                     windowWallWidth_cm = windowWallSurface.width_cm;
+                 } else {
+                      console.error(`Window target wall type "${windowTargetWallKey}" not found in surface map.`);
+                      // Do not add hole if wall surface is not found
+                      return; // Exit function if critical wall is missing
+                 }
+
+                // Calculate windowX_cm based on the selected side (left/right) and distance
+                let windowX_cm;
+                if (windowSide === 'left') {
+                    windowX_cm = windowDistance;
+                } else { // windowSide === 'right'
+                    windowX_cm = windowWallWidth_cm - windowDistance - windowW;
+                }
+
+                 // Add window hole config if dimensions are valid and within bounds (with tolerance)
+                 if (!isNaN(windowX_cm) && !isNaN(windowY) && !isNaN(windowW) && !isNaN(windowH) && windowW > tolerance && windowH > tolerance && windowDistance >= 0) {
+                      // Ensure window is within wall bounds
+                     if (windowX_cm >= -tolerance && windowX_cm + windowW <= windowWallWidth_cm + tolerance) {
+                         myRoom.addHoleConfig(windowTargetWallKey, { type: 'window', x_cm: Math.max(0, windowX_cm), y_cm: windowY, width_cm: windowW, height_cm: windowH }); // Ensure x is not negative
+                     } else {
+                         console.warn(`Window position out of bounds for ${windowTargetWallKey} (${windowWallWidth_cm}cm). Window (X=${windowX_cm}cm, W=${windowW}cm) will not be drawn.`);
+                     }
+                 } else {
+                     console.warn("Invalid window dimensions or distance. Window will not be drawn.");
+                 }
+            }
+        }
+
+
         function renderRoom() {
             const shortDim = parseFloat(document.getElementById('shortDim').value);
             const longDim = parseFloat(document.getElementById('longDim').value);
             const height = parseFloat(document.getElementById('height').value);
-            const wallTileWidth = parseFloat(document.getElementById('wallTileWidth').value);
-            const wallTileHeight = parseFloat(document.getElementById('wallTileHeight').value);
-            const floorTileWidth = parseFloat(document.getElementById('floorTileWidth').value);
-            const floorTileHeight = parseFloat(document.getElementById('floorTileHeight').value);
-            const gap = parseFloat(document.getElementById('gap').value);
-            const wallStartPoint = document.getElementById('wallStartPoint').value;
-            const floorStartPoint = document.getElementById('floorStartPoint').value;
+            const wallTileWidth = parseFloat(document.getElementById('wallTileWidth').value); // Read wall tile width
+            const wallTileHeight = parseFloat(document.getElementById('wallTileHeight').value); // Read wall tile height
+            const floorTileWidth = parseFloat(document.getElementById('floorTileWidth').value); // Read floor tile width
+            const floorTileHeight = parseFloat(document.getElementById('floorTileHeight').value); // Read floor tile height
+            const gap = parseFloat(document.getElementById('gap').value); // Gap is still shared
+            const wallStartPointUI = document.getElementById('wallStartPoint').value; // Read wall start point from UI
+
+             // Map UI value to internal startPoint value (defaulting horizontal start to left)
+             let wallStartPoint;
+             switch(wallStartPointUI) {
+                 case 'bottom':
+                     wallStartPoint = 'bottomLeft';
+                     break;
+                 case 'top':
+                     wallStartPoint = 'topLeft';
+                     break;
+                 case 'center':
+                     wallStartPoint = 'center';
+                     break;
+                 default: // Fallback to bottomLeft
+                     wallStartPoint = 'bottomLeft';
+             }
+
+
+            if (isNaN(shortDim) || isNaN(longDim) || isNaN(height) || isNaN(wallTileWidth) || isNaN(wallTileHeight) || isNaN(floorTileWidth) || isNaN(floorTileHeight) || isNaN(gap) || shortDim <= 0 || longDim <= 0 || height <= 0 || wallTileWidth <= 0 || wallTileHeight <= 0 || floorTileWidth <= 0 || floorTileHeight <= 0 || gap < 0) {
+                alert('請輸入有效的房間和磁磚尺寸！');
+                return;
+            }
+
 
             if (!myRoom) {
-                myRoom = new Room(shortDim, longDim, height);
+                 // Create room instance for the first time
+                 myRoom = new Room(shortDim, longDim, height);
             } else {
+                // Update room dimensions
                 myRoom.updateDimensions(shortDim, longDim, height);
             }
 
-            myRoom.wallShort1.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
-            myRoom.wallLong1.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
-            myRoom.wallShort2.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
-            myRoom.wallLong2.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+             // Update wall tile settings for all wall surfaces using the selected start point
+             myRoom.wallShort1.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+             myRoom.wallLong1.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+             myRoom.wallShort2.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+             myRoom.wallLong2.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
 
-            myRoom.updateFloorTileConfig(floorTileWidth, floorTileHeight, gap, floorStartPoint);
+             // Update floor tile settings specifically for the floor surface
+             myRoom.updateFloorTileConfig(floorTileWidth, floorTileHeight, gap, 'topLeft'); // Assuming topLeft start for floor
 
+
+            // Read hole information from UI and update myRoom's holeConfigs
             updateHoleConfigsFromUI();
-            myRoom.applyHoleConfigs();
-            myRoom.setLayoutMode('horizontal');
+             // Apply updated holeConfigs to wall instances
+             myRoom.applyHoleConfigs();
+
+
+            // Set layout mode (fixed to HORIZONTAL)
+            myRoom.setLayoutMode(LAYOUT_MODE.HORIZONTAL); // Fixed to horizontal
+
+
+            // Render the room
             myRoom.render('roomCanvas');
         }
+
+
+        // Initial render after page load
+        window.onload = () => {
+             // Initialize visibility state of window input fields (only need to control window)
+             document.getElementById('windowWallType').addEventListener('change', toggleWindowDimensions);
+
+             // Initial call to set window dimensions visibility based on default value
+             toggleWindowDimensions();
+
+             // Initial room render
+             renderRoom();
+        };
+
     </script>
+
+</body>
 </body>
 </html>
