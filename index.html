@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>磁磚排版示意圖</title>
+    <style>
+        /* 現有樣式保持不變 */
+    </style>
+</head>
+<body>
+
+    <h1>磁磚排版示意圖工具</h1>
+
+    <div id="controls">
+        <!-- 其他輸入欄位略 -->
+
+        <div id="wall-tiling-start-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+            <h3>牆面磁磚起鋪點</h3>
+            <div class="hole-input-row">
+                <div class="control-group">
+                    <label for="wallStartPoint">起鋪點:</label>
+                    <select id="wallStartPoint">
+                        <option value="topLeft">左上</option>
+                        <option value="topRight">右上</option>
+                        <option value="bottomLeft">左下</option>
+                        <option value="bottomRight">右下</option>
+                        <option value="center">中心</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="floor-tiling-start-controls" style="grid-column: 1 / -1; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+            <h3>地面磁磚起鋪點</h3>
+            <div class="hole-input-row">
+                <div class="control-group">
+                    <label for="floorStartPoint">起鋪點:</label>
+                    <select id="floorStartPoint">
+                        <option value="topLeft">左上</option>
+                        <option value="topRight">右上</option>
+                        <option value="bottomLeft">左下</option>
+                        <option value="bottomRight">右下</option>
+                        <option value="center">中心</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button onclick="renderRoom()">更新並渲染</button>
+
+    <canvas id="roomCanvas"></canvas>
+
+    <script>
+        function renderRoom() {
+            const shortDim = parseFloat(document.getElementById('shortDim').value);
+            const longDim = parseFloat(document.getElementById('longDim').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const wallTileWidth = parseFloat(document.getElementById('wallTileWidth').value);
+            const wallTileHeight = parseFloat(document.getElementById('wallTileHeight').value);
+            const floorTileWidth = parseFloat(document.getElementById('floorTileWidth').value);
+            const floorTileHeight = parseFloat(document.getElementById('floorTileHeight').value);
+            const gap = parseFloat(document.getElementById('gap').value);
+            const wallStartPoint = document.getElementById('wallStartPoint').value;
+            const floorStartPoint = document.getElementById('floorStartPoint').value;
+
+            if (!myRoom) {
+                myRoom = new Room(shortDim, longDim, height);
+            } else {
+                myRoom.updateDimensions(shortDim, longDim, height);
+            }
+
+            myRoom.wallShort1.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+            myRoom.wallLong1.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+            myRoom.wallShort2.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+            myRoom.wallLong2.updateTileConfig(wallTileWidth, wallTileHeight, gap, wallStartPoint);
+
+            myRoom.updateFloorTileConfig(floorTileWidth, floorTileHeight, gap, floorStartPoint);
+
+            updateHoleConfigsFromUI();
+            myRoom.applyHoleConfigs();
+            myRoom.setLayoutMode('horizontal');
+            myRoom.render('roomCanvas');
+        }
+    </script>
+</body>
+</html>
